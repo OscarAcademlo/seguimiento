@@ -146,17 +146,17 @@
             }
         }
 
-        // Función para compartir el recorrido por WhatsApp
+        // Función para compartir la ubicación en tiempo real por WhatsApp
         function shareViaWhatsApp() {
             var name = document.getElementById('name').value;
             if (name) {
-                var distance = document.getElementById('distance-span').innerText;
-                var trackingUrl = 'https://oscarsoft.me/seguimiento//track'; // URL del servicio de seguimiento
-                var whatsappMessage = `Hola, soy ${name} y estoy en camino. Me faltan ${distance} km para llegar a mi destino. Puedes seguir mi recorrido en tiempo real aquí: ${trackingUrl}`;
+                var lat = userMarker ? userMarker.getLatLng().lat : '-41.133472'; // Valor predeterminado si no hay marcador
+                var lon = userMarker ? userMarker.getLatLng().lng : '-71.310278'; // Valor predeterminado si no hay marcador
+                var whatsappMessage = `Hola, soy ${name} y estoy en camino. Puedes seguir mi ubicación en tiempo real aquí: https://www.google.com/maps?q=${lat},${lon}`;
                 var whatsappUrl = `https://wa.me/?text=${encodeURIComponent(whatsappMessage)}`;
                 window.open(whatsappUrl, '_blank');
             } else {
-                alert('Por favor, ingrese su nombre para compartir su recorrido.');
+                alert('Por favor, ingrese su nombre para compartir su ubicación.');
             }
         }
 
