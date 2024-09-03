@@ -17,19 +17,30 @@
 <body class="container">
     <h1 class="mt-3">Distancia en Tiempo Real en Bariloche</h1>
     <div class="row">
-        <div class="col-md-8">
+        <div class="col-md-6">
+            <div class="mb-3">
+                <label for="name" class="form-label">Ingrese su nombre:</label>
+                <input type="text" class="form-control" id="name" placeholder="Ej: Juan Pérez">
+            </div>
+        </div>
+        <div class="col-md-6">
             <div class="mb-3">
                 <label for="destination" class="form-label">Ingrese el lugar de destino en Bariloche:</label>
                 <input type="text" class="form-control" id="destination" placeholder="Ej: Moreno 750">
             </div>
         </div>
+    </div>
+    <div class="row">
         <div class="col-md-4 d-flex align-items-end">
             <button id="start-tracking" class="btn btn-primary">Comenzar Seguimiento</button>
+        </div>
+        <div class="col-md-4 d-flex align-items-end">
+            <button id="share-whatsapp" class="btn btn-success">Compartir por WhatsApp</button>
         </div>
     </div>
     <div class="row">
         <div class="col-md-12">
-            <p id="distance-info" class="h5"></p>
+            <p id="distance-info" class="h5">Distancia al destino: <span id="distance-span">0</span> km</p>
         </div>
     </div>
     <div id="map"></div>
@@ -44,8 +55,8 @@
             attribution: '© OpenStreetMap'
         }).addTo(map);
 
-        var userMarker, destinationMarker, routeLine;
-        var destinationLatLng;
+        var userMarker, destinationMarker, routeLine, startMarker;
+        var destinationLatLng, startLatLng;
 
         // Función para geocodificar la dirección ingresada
         function geocodeAddress(address, callback) {
@@ -70,6 +81,12 @@
         function updateLocation(position) {
             var userLatLng = L.latLng(position.coords.latitude, position.coords.longitude);
 
+            // Guardar la posición inicial
+            if (!startLatLng) {
+                startLatLng = userLatLng;
+                startMarker = L.marker(startLatLng).addTo(map).bindPopup('Punto de Inicio').openPopup();
+            }
+
             // Actualizar o crear marcador del usuario
             if (!userMarker) {
                 userMarker = L.marker(userLatLng).addTo(map).bindPopup('Estás aquí');
@@ -87,7 +104,7 @@
 
                 // Calcular la distancia y mostrarla
                 var totalDistance = userLatLng.distanceTo(destinationLatLng) / 1000; // en km
-                document.getElementById('distance-info').innerText = 'Distancia al destino: ' + totalDistance.toFixed(2) + ' km';
+                document.getElementById('distance-span').innerText = totalDistance.toFixed(2);
             }
 
             // Centrar mapa en la nueva ubicación del usuario
@@ -96,8 +113,10 @@
 
         // Función para comenzar el seguimiento en tiempo real
         function startTracking() {
+            var name = document.getElementById('name').value;
             var destination = document.getElementById('destination').value;
-            if (destination) {
+
+            if (name && destination) {
                 geocodeAddress(destination, function(latlng) {
                     destinationLatLng = latlng;
 
@@ -118,11 +137,25 @@
                     }
                 });
             } else {
-                alert('Por favor, ingrese una dirección de destino.');
+                alert('Por favor, ingrese su nombre y una dirección de destino.');
+            }
+        }
+
+        // Función para compartir el recorrido por WhatsApp
+        function shareViaWhatsApp() {
+            var name = document.getElementById('name').value;
+            if (name) {
+                var distance = document.getElementById('distance-span').innerText;
+                var whatsappMessage = `Hola, soy ${name} y estoy en camino. Me faltan ${distance} km para llegar a mi destino.`;
+                var whatsappUrl = `https://wa.me/?text=${encodeURIComponent(whatsappMessage)}`;
+                window.open(whatsappUrl, '_blank');
+            } else {
+                alert('Por favor, ingrese su nombre para compartir su recorrido.');
             }
         }
 
         document.getElementById('start-tracking').addEventListener('click', startTracking);
+        document.getElementById('share-whatsapp').addEventListener('click', shareViaWhatsApp);
     </script>
 </body>
 </html>
