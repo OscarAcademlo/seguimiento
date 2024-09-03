@@ -1,108 +1,161 @@
 <!DOCTYPE html>
 <html lang="es">
 <head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Seguimiento en Tiempo Real</title>
-  <link rel="stylesheet" href="https://unpkg.com/leaflet/dist/leaflet.css" />
-  <style>
-    #map { height: 500px; width: 100%; }
-    .container { margin: 20px; }
-    .info { margin-top: 10px; }
-  </style>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Mapa en Tiempo Real - Bariloche</title>
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.3/dist/leaflet.css" />
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
+    <style>
+        #map {
+            height: 500px;
+            width: 100%;
+            margin-top: 20px;
+        }
+    </style>
 </head>
-<body>
-  <div class="container">
-    <h1>Seguimiento en Tiempo Real</h1>
-    <input type="text" id="destino" placeholder="Ingresa el lugar de destino en Bariloche" class="form-control" />
-    <button onclick="compartirPorWhatsApp()">Compartir mi recorrido por WhatsApp</button>
-    <span id="distancia" class="info"></span>
+<body class="container">
+    <h1 class="mt-3">Distancia en Tiempo Real en Bariloche</h1>
+    <div class="row">
+        <div class="col-md-6">
+            <div class="mb-3">
+                <label for="name" class="form-label">Ingrese su nombre:</label>
+                <input type="text" class="form-control" id="name" placeholder="Ej: Juan Pérez">
+            </div>
+        </div>
+        <div class="col-md-6">
+            <div class="mb-3">
+                <label for="destination" class="form-label">Ingrese el lugar de destino en Bariloche:</label>
+                <input type="text" class="form-control" id="destination" placeholder="Ej: Moreno 750">
+            </div>
+        </div>
+    </div>
+    <div class="row">
+        <div class="col-md-4 d-flex align-items-end">
+            <button id="start-tracking" class="btn btn-primary">Comenzar Seguimiento</button>
+        </div>
+        <div class="col-md-4 d-flex align-items-end">
+            <button id="share-whatsapp" class="btn btn-success">Compartir por WhatsApp</button>
+        </div>
+    </div>
+    <div class="row">
+        <div class="col-md-12">
+            <p id="distance-info" class="h5">Distancia al destino: <span id="distance-span">0</span> km</p>
+        </div>
+    </div>
     <div id="map"></div>
-  </div>
 
-  <script src="https://unpkg.com/leaflet/dist/leaflet.js"></script>
-  <script>
-    const map = L.map('map').setView([-41.1335, -71.3103], 13); // Centro en Bariloche
+    <script src="https://unpkg.com/leaflet@1.9.3/dist/leaflet.js"></script>
+    <script>
+        var map = L.map('map').setView([-41.133472, -71.310278], 13); // Centrado en Bariloche
 
-    L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
-      attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
-    }).addTo(map);
+        // Añadir capa de mapas de OpenStreetMap
+        L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+            maxZoom: 18,
+            attribution: '© OpenStreetMap'
+        }).addTo(map);
 
-    let markerCurrentPosition = L.marker([-41.1335, -71.3103]).addTo(map);
-    let markerDestination = L.marker([-41.1335, -71.3103]).addTo(map);
-    let polyline = L.polyline([], { color: 'blue' }).addTo(map);
-    let distanceSpan = document.getElementById('distancia');
-    let watchId;
+        var userMarker, destinationMarker, routeLine, startMarker;
+        var destinationLatLng, startLatLng;
 
-    function updatePosition(position) {
-      const { latitude, longitude } = position.coords;
-      markerCurrentPosition.setLatLng([latitude, longitude]);
-      map.setView([latitude, longitude]);
+        // Función para geocodificar la dirección ingresada
+        function geocodeAddress(address, callback) {
+            var url = `https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(address)}, Bariloche, Argentina`;
+            fetch(url)
+                .then(response => response.json())
+                .then(data => {
+                    if (data.length > 0) {
+                        var lat = data[0].lat;
+                        var lon = data[0].lon;
+                        callback(L.latLng(lat, lon));
+                    } else {
+                        alert('Dirección no encontrada: ' + address);
+                    }
+                })
+                .catch(error => {
+                    console.error('Error en la geocodificación:', error);
+                });
+        }
 
-      if (polyline.getLatLngs().length > 0) {
-        polyline.addLatLng([latitude, longitude]);
-      } else {
-        polyline.setLatLngs([[latitude, longitude]]);
-      }
+        // Función para actualizar la posición del usuario y calcular la distancia
+        function updateLocation(position) {
+            var userLatLng = L.latLng(position.coords.latitude, position.coords.longitude);
 
-      calculateDistance();
-    }
+            // Guardar la posición inicial
+            if (!startLatLng) {
+                startLatLng = userLatLng;
+                startMarker = L.marker(startLatLng).addTo(map).bindPopup('Punto de Inicio').openPopup();
+            }
 
-    function onError(error) {
-      console.error('Error en la ubicación:', error);
-    }
+            // Actualizar o crear marcador del usuario
+            if (!userMarker) {
+                userMarker = L.marker(userLatLng).addTo(map).bindPopup('Estás aquí');
+            } else {
+                userMarker.setLatLng(userLatLng).openPopup();
+            }
 
-    function calculateDistance() {
-      const currentLatLng = markerCurrentPosition.getLatLng();
-      const destinationLatLng = markerDestination.getLatLng();
+            // Dibujar o actualizar la línea de ruta
+            if (destinationLatLng) {
+                if (routeLine) {
+                    routeLine.setLatLngs([userLatLng, destinationLatLng]);
+                } else {
+                    routeLine = L.polyline([userLatLng, destinationLatLng], { color: 'blue' }).addTo(map);
+                }
 
-      const distance = currentLatLng.distanceTo(destinationLatLng);
-      distanceSpan.textContent = `Distancia restante: ${Math.round(distance)} metros`;
+                // Calcular la distancia y mostrarla
+                var totalDistance = userLatLng.distanceTo(destinationLatLng) / 1000; // en km
+                document.getElementById('distance-span').innerText = totalDistance.toFixed(2);
+            }
 
-      // Actualizar la distancia en tiempo real
-      setTimeout(calculateDistance, 1000);
-    }
+            // Centrar mapa en la nueva ubicación del usuario
+            map.setView(userLatLng, 13);
+        }
 
-    function setDestination() {
-      const destino = document.getElementById('destino').value;
-      if (!destino) return;
+        // Función para comenzar el seguimiento en tiempo real
+        function startTracking() {
+            var name = document.getElementById('name').value;
+            var destination = document.getElementById('destination').value;
 
-      fetch(`https://nominatim.openstreetmap.org/search?q=${encodeURIComponent(destino)}, Bariloche&format=json`)
-        .then(response => response.json())
-        .then(data => {
-          if (data.length > 0) {
-            const { lat, lon } = data[0];
-            markerDestination.setLatLng([lat, lon]);
-            map.setView([lat, lon]);
+            if (name && destination) {
+                geocodeAddress(destination, function(latlng) {
+                    destinationLatLng = latlng;
 
-            calculateDistance();
-          } else {
-            alert('No se encontró el destino.');
-          }
-        });
-    }
+                    // Crear o mover marcador de destino
+                    if (!destinationMarker) {
+                        destinationMarker = L.marker(destinationLatLng).addTo(map).bindPopup('Destino: ' + destination).openPopup();
+                    } else {
+                        destinationMarker.setLatLng(destinationLatLng).openPopup();
+                    }
 
-    function compartirPorWhatsApp() {
-      const nombre = prompt('Ingresa tu nombre:');
-      if (!nombre) return;
+                    // Solicitar permisos de geolocalización y comenzar a ver la posición en tiempo real
+                    if (navigator.geolocation) {
+                        navigator.geolocation.watchPosition(updateLocation, function(error) {
+                            alert('Error en la geolocalización: ' + error.message);
+                        }, { enableHighAccuracy: true });
+                    } else {
+                        alert('La geolocalización no está soportada por su navegador.');
+                    }
+                });
+            } else {
+                alert('Por favor, ingrese su nombre y una dirección de destino.');
+            }
+        }
 
-      const url = window.location.href;
-      const mensaje = `Soy ${nombre}, estoy yendo hacia el destino. Mi recorrido actual: ${url}`;
-      const telefono = prompt('Ingresa el número de teléfono para compartir por WhatsApp (con código de país):');
-      
-      if (telefono) {
-        const enlace = `https://wa.me/${telefono}?text=${encodeURIComponent(mensaje)}`;
-        window.open(enlace, '_blank');
-      }
-    }
+        // Función para compartir el recorrido por WhatsApp
+        function shareViaWhatsApp() {
+            var name = document.getElementById('name').value;
+            if (name) {
+                var distance = document.getElementById('distance-span').innerText;
+                var whatsappMessage = `Hola, soy ${name} y estoy en camino. Me faltan ${distance} km para llegar a mi destino.`;
+                var whatsappUrl = `https://wa.me/?text=${encodeURIComponent(whatsappMessage)}`;
+                window.open(whatsappUrl, '_blank');
+            } else {
+                alert('Por favor, ingrese su nombre para compartir su recorrido.');
+            }
+        }
 
-    document.getElementById('destino').addEventListener('change', setDestination);
-
-    if (navigator.geolocation) {
-      watchId = navigator.geolocation.watchPosition(updatePosition, onError, { enableHighAccuracy: true });
-    } else {
-      alert('La geolocalización no está soportada en este navegador.');
-    }
-  </script>
+        document.getElementById('start-tracking').addEventListener('click', startTracking);
+        document.getElementById('share-whatsapp').addEventListener('click', shareViaWhatsApp);
+    </script>
 </body>
 </html>
