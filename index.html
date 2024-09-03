@@ -147,7 +147,7 @@
             if (name) {
                 var distance = document.getElementById('distance-span').innerText;
                 var currentUrl = encodeURIComponent(window.location.href);
-                var whatsappMessage = `Hola, soy ${name} y estoy en camino. Me faltan ${distance} km para llegar a mi destino. Puedes seguir mi recorrido aquí: ${currentUrl}`;
+                var whatsappMessage = `Hola, soy ${name} y estoy en camino. Me faltan ${distance} km para llegar a mi destino. Puedes seguir mi recorrido aquí: ${window.location.href}`;
                 var whatsappUrl = `https://wa.me/?text=${encodeURIComponent(whatsappMessage)}`;
                 window.open(whatsappUrl, '_blank');
             } else {
