@@ -1,0 +1,128 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Mapa en Tiempo Real - Bariloche</title>
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.3/dist/leaflet.css" />
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
+    <style>
+        #map {
+            height: 500px;
+            width: 100%;
+            margin-top: 20px;
+        }
+    </style>
+</head>
+<body class="container">
+    <h1 class="mt-3">Distancia en Tiempo Real en Bariloche</h1>
+    <div class="row">
+        <div class="col-md-8">
+            <div class="mb-3">
+                <label for="destination" class="form-label">Ingrese el lugar de destino en Bariloche:</label>
+                <input type="text" class="form-control" id="destination" placeholder="Ej: Moreno 750">
+            </div>
+        </div>
+        <div class="col-md-4 d-flex align-items-end">
+            <button id="start-tracking" class="btn btn-primary">Comenzar Seguimiento</button>
+        </div>
+    </div>
+    <div class="row">
+        <div class="col-md-12">
+            <p id="distance-info" class="h5"></p>
+        </div>
+    </div>
+    <div id="map"></div>
+
+    <script src="https://unpkg.com/leaflet@1.9.3/dist/leaflet.js"></script>
+    <script>
+        var map = L.map('map').setView([-41.133472, -71.310278], 13); // Centrado en Bariloche
+
+        // Añadir capa de mapas de OpenStreetMap
+        L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+            maxZoom: 18,
+            attribution: '© OpenStreetMap'
+        }).addTo(map);
+
+        var userMarker, destinationMarker, routeLine;
+        var destinationLatLng;
+
+        // Función para geocodificar la dirección ingresada
+        function geocodeAddress(address, callback) {
+            var url = `https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(address)}, Bariloche, Argentina`;
+            fetch(url)
+                .then(response => response.json())
+                .then(data => {
+                    if (data.length > 0) {
+                        var lat = data[0].lat;
+                        var lon = data[0].lon;
+                        callback(L.latLng(lat, lon));
+                    } else {
+                        alert('Dirección no encontrada: ' + address);
+                    }
+                })
+                .catch(error => {
+                    console.error('Error en la geocodificación:', error);
+                });
+        }
+
+        // Función para actualizar la posición del usuario y calcular la distancia
+        function updateLocation(position) {
+            var userLatLng = L.latLng(position.coords.latitude, position.coords.longitude);
+
+            // Actualizar o crear marcador del usuario
+            if (!userMarker) {
+                userMarker = L.marker(userLatLng).addTo(map).bindPopup('Estás aquí');
+            } else {
+                userMarker.setLatLng(userLatLng).openPopup();
+            }
+
+            // Dibujar o actualizar la línea de ruta
+            if (destinationLatLng) {
+                if (routeLine) {
+                    routeLine.setLatLngs([userLatLng, destinationLatLng]);
+                } else {
+                    routeLine = L.polyline([userLatLng, destinationLatLng], { color: 'blue' }).addTo(map);
+                }
+
+                // Calcular la distancia y mostrarla
+                var totalDistance = userLatLng.distanceTo(destinationLatLng) / 1000; // en km
+                document.getElementById('distance-info').innerText = 'Distancia al destino: ' + totalDistance.toFixed(2) + ' km';
+            }
+
+            // Centrar mapa en la nueva ubicación del usuario
+            map.setView(userLatLng, 13);
+        }
+
+        // Función para comenzar el seguimiento en tiempo real
+        function startTracking() {
+            var destination = document.getElementById('destination').value;
+            if (destination) {
+                geocodeAddress(destination, function(latlng) {
+                    destinationLatLng = latlng;
+
+                    // Crear o mover marcador de destino
+                    if (!destinationMarker) {
+                        destinationMarker = L.marker(destinationLatLng).addTo(map).bindPopup('Destino: ' + destination).openPopup();
+                    } else {
+                        destinationMarker.setLatLng(destinationLatLng).openPopup();
+                    }
+
+                    // Solicitar permisos de geolocalización y comenzar a ver la posición en tiempo real
+                    if (navigator.geolocation) {
+                        navigator.geolocation.watchPosition(updateLocation, function(error) {
+                            alert('Error en la geolocalización: ' + error.message);
+                        }, { enableHighAccuracy: true });
+                    } else {
+                        alert('La geolocalización no está soportada por su navegador.');
+                    }
+                });
+            } else {
+                alert('Por favor, ingrese una dirección de destino.');
+            }
+        }
+
+        document.getElementById('start-tracking').addEventListener('click', startTracking);
+    </script>
+</body>
+</html>
