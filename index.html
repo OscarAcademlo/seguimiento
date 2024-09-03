@@ -151,7 +151,7 @@
             var name = document.getElementById('name').value;
             if (name) {
                 var distance = document.getElementById('distance-span').innerText;
-                var trackingUrl = 'http://localhost:3000/track'; // URL del servicio de seguimiento
+                var trackingUrl = 'https://oscarsoft.me/seguimiento//track'; // URL del servicio de seguimiento
                 var whatsappMessage = `Hola, soy ${name} y estoy en camino. Me faltan ${distance} km para llegar a mi destino. Puedes seguir mi recorrido en tiempo real aquí: ${trackingUrl}`;
                 var whatsappUrl = `https://wa.me/?text=${encodeURIComponent(whatsappMessage)}`;
                 window.open(whatsappUrl, '_blank');
