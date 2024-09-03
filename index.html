@@ -46,6 +46,7 @@
     <div id="map"></div>
 
     <script src="https://unpkg.com/leaflet@1.9.3/dist/leaflet.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/socket.io/4.0.1/socket.io.min.js"></script>
     <script>
         var map = L.map('map').setView([-41.133472, -71.310278], 13); // Centrado en Bariloche
 
@@ -57,6 +58,7 @@
 
         var userMarker, destinationMarker, routeLine, startMarker;
         var destinationLatLng, startLatLng;
+        var socket = io('https://oscarsoft.me/seguimiento/'); // Cambiar al URL de tu servidor
 
         // Función para geocodificar la dirección ingresada
         function geocodeAddress(address, callback) {
@@ -80,6 +82,9 @@
         // Función para actualizar la posición del usuario y calcular la distancia
         function updateLocation(position) {
             var userLatLng = L.latLng(position.coords.latitude, position.coords.longitude);
+
+            // Enviar ubicación al servidor
+            socket.emit('locationUpdate', { lat: userLatLng.lat, lon: userLatLng.lng });
 
             // Guardar la posición inicial
             if (!startLatLng) {
@@ -146,8 +151,8 @@
             var name = document.getElementById('name').value;
             if (name) {
                 var distance = document.getElementById('distance-span').innerText;
-                var currentUrl = encodeURIComponent(window.location.href);
-                var whatsappMessage = `Hola, soy ${name} y estoy en camino. Me faltan ${distance} km para llegar a mi destino. Puedes seguir mi recorrido aquí: ${window.location.href}`;
+                var trackingUrl = 'http://localhost:3000/track'; // URL del servicio de seguimiento
+                var whatsappMessage = `Hola, soy ${name} y estoy en camino. Me faltan ${distance} km para llegar a mi destino. Puedes seguir mi recorrido en tiempo real aquí: ${trackingUrl}`;
                 var whatsappUrl = `https://wa.me/?text=${encodeURIComponent(whatsappMessage)}`;
                 window.open(whatsappUrl, '_blank');
             } else {
@@ -157,6 +162,16 @@
 
         document.getElementById('start-tracking').addEventListener('click', startTracking);
         document.getElementById('share-whatsapp').addEventListener('click', shareViaWhatsApp);
+
+        // Actualizar el mapa en tiempo real para otros clientes
+        socket.on('locationUpdate', (data) => {
+            var latlng = L.latLng(data.lat, data.lon);
+            if (userMarker) {
+                userMarker.setLatLng(latlng).openPopup();
+            } else {
+                userMarker = L.marker(latlng).addTo(map).bindPopup('Ubicación en tiempo real').openPopup();
+            }
+        });
     </script>
 </body>
 </html>
