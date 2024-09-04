@@ -146,19 +146,27 @@
                 alert('Por favor, ingrese su nombre y una dirección de destino.');
             }
         }
-        // compartir el enlace por whatsapp
 
+        // Función para generar un enlace para compartir la ubicación
+        function generateShareLink() {
+            var userLatLng = userMarker ? userMarker.getLatLng() : [-41.133472, -71.310278]; // Coordenadas predeterminadas
+            var lat = userLatLng.lat;
+            var lon = userLatLng.lng;
+            return `https://mapa.oscarsoft.me/?lat=${lat}&lon=${lon}`;
+        }
+
+        // Función para compartir la ubicación en tiempo real por WhatsApp
         function shareViaWhatsApp() {
-    var name = document.getElementById('name').value;
-    if (name) {
-        var shareLink = generateShareLink();
-        var whatsappMessage = `Hola, soy ${name}. Puedes seguir mi ubicación en tiempo real a través del siguiente enlace: ${shareLink}`;
-        var whatsappUrl = `https://wa.me/?text=${encodeURIComponent(whatsappMessage)}`;
-        window.open(whatsappUrl, '_blank');
-    } else {
-        alert('Por favor, ingrese su nombre para compartir su ubicación.');
-    }
-}
+            var name = document.getElementById('name').value;
+            if (name) {
+                var shareLink = generateShareLink();
+                var whatsappMessage = `Hola, soy ${name}. Puedes seguir mi ubicación en tiempo real a través del siguiente enlace: ${shareLink}`;
+                var whatsappUrl = `https://wa.me/?text=${encodeURIComponent(whatsappMessage)}`;
+                window.open(whatsappUrl, '_blank');
+            } else {
+                alert('Por favor, ingrese su nombre para compartir su ubicación.');
+            }
+        }
 
         // Función para enviar un mensaje por WhatsApp cuando estás cerca del destino
         function sendProximityMessage() {
@@ -172,16 +180,6 @@
 
         document.getElementById('start-tracking').addEventListener('click', startTracking);
         document.getElementById('share-whatsapp').addEventListener('click', shareViaWhatsApp);
-
-
-        // Función para generar un enlace para compartir la ubicación
-function generateShareLink() {
-    var userLatLng = userMarker ? userMarker.getLatLng() : [-41.133472, -71.310278]; // Coordenadas predeterminadas
-    var lat = userLatLng.lat;
-    var lon = userLatLng.lng;
-    return `https://mapa.oscarsoft.me/`;
-}
-
     </script>
 </body>
 </html>
