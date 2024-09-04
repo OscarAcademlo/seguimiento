@@ -96,7 +96,7 @@
             if (!userMarker) {
                 userMarker = L.marker(userLatLng).addTo(map).bindPopup('Estás aquí');
             } else {
-                userMarker.setLatLng(userLatLng).openPopup();
+                userMarker.setLatLng(userLatLng).update();
             }
 
             // Dibujar o actualizar la línea de ruta
@@ -136,7 +136,7 @@
                     if (navigator.geolocation) {
                         navigator.geolocation.watchPosition(updateLocation, function(error) {
                             alert('Error en la geolocalización: ' + error.message);
-                        }, { enableHighAccuracy: true });
+                        }, { enableHighAccuracy: true, maximumAge: 0, timeout: 5000 });
                     } else {
                         alert('La geolocalización no está soportada por su navegador.');
                     }
@@ -167,7 +167,7 @@
         socket.on('locationUpdate', (data) => {
             var latlng = L.latLng(data.lat, data.lon);
             if (userMarker) {
-                userMarker.setLatLng(latlng).openPopup();
+                userMarker.setLatLng(latlng).update();
             } else {
                 userMarker = L.marker(latlng).addTo(map).bindPopup('Ubicación en tiempo real').openPopup();
             }
