@@ -11,6 +11,16 @@
             width: 100%;
             margin-top: 20px;
         }
+
+        /* Mejoras para móviles */
+        body {
+            touch-action: manipulation;
+            -webkit-tap-highlight-color: transparent;
+        }
+
+        #distance-info {
+            font-size: 1.2rem;
+        }
     </style>
     <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.3/dist/leaflet.css" />
     <script src="https://unpkg.com/leaflet@1.9.3/dist/leaflet.js"></script>
@@ -22,13 +32,13 @@
         <div class="col-md-6">
             <div class="mb-3">
                 <label for="name" class="form-label">Ingrese su nombre:</label>
-                <input type="text" class="form-control" id="name" placeholder="Ej: Juan Pérez">
+                <input type="text" class="form-control" id="name" placeholder="Ej: Juan Pérez" autocomplete="off">
             </div>
         </div>
         <div class="col-md-6">
             <div class="mb-3">
                 <label for="destination" class="form-label">Ingrese el lugar de destino en Bariloche:</label>
-                <input type="text" class="form-control" id="destination" placeholder="Ej: Moreno 750">
+                <input type="text" class="form-control" id="destination" placeholder="Ej: Moreno 750" autocomplete="off">
             </div>
         </div>
     </div>
@@ -51,7 +61,8 @@
         var map = L.map('map').setView([-41.133472, -71.310278], 13);
 
         L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
-            attribution: '&copy; OpenStreetMap contributors'
+            attribution: '&copy; OpenStreetMap contributors',
+            maxZoom: 19,
         }).addTo(map);
 
         var userMarker, destinationMarker, routeLine, startMarker;
@@ -137,7 +148,7 @@
                     if (navigator.geolocation) {
                         navigator.geolocation.watchPosition(updateLocation, function(error) {
                             alert('Error en la geolocalización: ' + error.message);
-                        }, { enableHighAccuracy: true });
+                        }, { enableHighAccuracy: true, timeout: 5000, maximumAge: 0 });
                     } else {
                         alert('La geolocalización no está soportada por su navegador.');
                     }
@@ -148,16 +159,35 @@
         }
 
         // Función para generar un enlace para compartir la ubicación con seguimiento en tiempo real
-function generateShareLink() {
-    if (userMarker) {
-        var lat = userMarker.getLatLng().lat;
-        var lon = userMarker.getLatLng().lng;
-        return `https://mapa.oscarsoft.me/?lat=${lat}&lon=${lon}&track=true`;
-    } else {
-        return `https://mapa.oscarsoft.me/?track=true`;
-    }
-}
+        function generateShareLink() {
+            var lat = userMarker ? userMarker.getLatLng().lat : startLatLng[0];
+            var lon = userMarker ? userMarker.getLatLng().lng : startLatLng[1];
+            return `https://mapa.oscarsoft.me/?lat=${lat}&lon=${lon}&track=true`;
+        }
 
+        // Función para iniciar seguimiento en la misma página si el enlace contiene track=true
+        function initializeTracking() {
+            var urlParams = new URLSearchParams(window.location.search);
+            var track = urlParams.get('track');
+            var lat = urlParams.get('lat');
+            var lon = urlParams.get('lon');
+
+            if (track === 'true' && lat && lon) {
+                startLatLng = [parseFloat(lat), parseFloat(lon)];
+                map.setView(startLatLng, 15);
+
+                // Crear el marcador inicial
+                userMarker = L.marker(startLatLng).addTo(map).bindPopup('Estás aquí').openPopup();
+
+                if (navigator.geolocation) {
+                    navigator.geolocation.watchPosition(updateLocation, function(error) {
+                        alert('Error en la geolocalización: ' + error.message);
+                    }, { enableHighAccuracy: true, timeout: 5000, maximumAge: 0 });
+                } else {
+                    alert('La geolocalización no está soportada por su navegador.');
+                }
+            }
+        }
 
         // Función para compartir la ubicación en tiempo real por WhatsApp
         function shareViaWhatsApp() {
@@ -177,13 +207,15 @@ function generateShareLink() {
             var name = document.getElementById('name').value;
             if (name) {
                 var whatsappMessage = `Hola, soy ${name}. Estoy a menos de 300 metros de tu ubicación. ¡Prepárate!`;
-                var whatsappUrl = `https://wa.me/?text=${encodeURIComponent(whatsappMessage)}`;
+                var whatsappUrl = `https://wa.me/2944651381?text=${encodeURIComponent(whatsappMessage)}`;
                 window.open(whatsappUrl, '_blank');
             }
         }
 
         document.getElementById('start-tracking').addEventListener('click', startTracking);
         document.getElementById('share-whatsapp').addEventListener('click', shareViaWhatsApp);
+
+        window.onload = initializeTracking;
     </script>
 </body>
 </html>
