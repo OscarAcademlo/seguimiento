@@ -147,13 +147,17 @@
             }
         }
 
-        // Función para generar un enlace para compartir la ubicación
-        function generateShareLink() {
-            var userLatLng = userMarker ? userMarker.getLatLng() : [-41.133472, -71.310278]; // Coordenadas predeterminadas
-            var lat = userLatLng.lat;
-            var lon = userLatLng.lng;
-            return `https://mapa.oscarsoft.me/?lat=${lat}&lon=${lon}`;
-        }
+        // Función para generar un enlace para compartir la ubicación con seguimiento en tiempo real
+function generateShareLink() {
+    if (userMarker) {
+        var lat = userMarker.getLatLng().lat;
+        var lon = userMarker.getLatLng().lng;
+        return `https://mapa.oscarsoft.me/?lat=${lat}&lon=${lon}&track=true`;
+    } else {
+        return `https://mapa.oscarsoft.me/?track=true`;
+    }
+}
+
 
         // Función para compartir la ubicación en tiempo real por WhatsApp
         function shareViaWhatsApp() {
