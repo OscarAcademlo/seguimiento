@@ -152,7 +152,7 @@
             if (name) {
                 var lat = userMarker ? userMarker.getLatLng().lat : '-41.133472'; // Valor predeterminado si no hay marcador
                 var lon = userMarker ? userMarker.getLatLng().lng : '-71.310278'; // Valor predeterminado si no hay marcador
-                var whatsappMessage = `Hola, soy ${name} y estoy en camino. Puedes seguir mi ubicación en tiempo real aquí: https://www.google.com/maps?q=${lat},${lon}`;
+                var whatsappMessage = `Hola, soy ${name} y estoy en camino. Puedes seguir mi ubicación en tiempo real aquí: https://www.openstreetmap.org/?mlat=${lat}&mlon=${lon}#map=16/${lat}/${lon}`;
                 var whatsappUrl = `https://wa.me/?text=${encodeURIComponent(whatsappMessage)}`;
                 window.open(whatsappUrl, '_blank');
             } else {
